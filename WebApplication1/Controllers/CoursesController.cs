@@ -1,46 +1,54 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using WebApplication1.Repository;
 using WebApplication1.Repository.Models;
 
 [ApiController]
-[Route("[controller]")]
-[Authorize]
+[Route("api/[controller]")]
 public class CoursesController : ControllerBase
 {
-    [HttpGet]
-    public IActionResult GetAll()
+    private readonly IDSDatabaseDbContext _context;
+
+    public CoursesController(IDSDatabaseDbContext context)
     {
-        using var context = new IDSDatabaseDbContext();
-        return Ok(context.Courses.Where(c => c.IsPublished == true).ToList());
+        _context = context;
     }
 
-    [Authorize(Roles = "Instructor,Admin")]
-    [HttpPost]
-    public IActionResult Create(Course course)
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+        => Ok(await _context.Courses.ToListAsync());
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> Get(int id)
     {
-        using var context = new IDSDatabaseDbContext();
+        var course = await _context.Courses.FindAsync(id);
+        return course == null ? NotFound() : Ok(course);
+    }
 
-        int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-        course.CreatedBy = userId;
-        course.CreatedAt = DateTime.UtcNow;
-
-        context.Courses.Add(course);
-        context.SaveChanges();
+    [HttpPost]
+    public async Task<IActionResult> Create(Course course)
+    {
+        _context.Courses.Add(course);
+        await _context.SaveChangesAsync();
         return Ok(course);
     }
 
-    [Authorize(Roles = "Instructor,Admin")]
-    [HttpDelete("{id}")]
-    public IActionResult Delete(int id)
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, Course course)
     {
-        using var context = new IDSDatabaseDbContext();
-        var course = context.Courses.Find(id);
-        if (course == null) return NotFound();
+        if (id != course.Id) return BadRequest();
+        _context.Entry(course).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
 
-        context.Courses.Remove(course);
-        context.SaveChanges();
-        return Ok();
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var course = await _context.Courses.FindAsync(id);
+        if (course == null) return NotFound();
+        _context.Courses.Remove(course);
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 }

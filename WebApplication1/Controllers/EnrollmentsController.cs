@@ -1,25 +1,23 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+﻿using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Repository;
 using WebApplication1.Repository.Models;
 
 [ApiController]
-[Route("[controller]")]
-[Authorize(Roles = "Student")]
+[Route("api/[controller]")]
 public class EnrollmentsController : ControllerBase
 {
-    [HttpPost]
-    public IActionResult Enroll(Enrollment enrollment)
+    private readonly IDSDatabaseDbContext _context;
+
+    public EnrollmentsController(IDSDatabaseDbContext context)
     {
-        using var context = new IDSDatabaseDbContext();
+        _context = context;
+    }
 
-        int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-        enrollment.UserId = userId;
-        enrollment.EnrolledAt = DateTime.UtcNow;
-
-        context.Enrollments.Add(enrollment);
-        context.SaveChanges();
+    [HttpPost]
+    public async Task<IActionResult> Enroll(Enrollment enrollment)
+    {
+        _context.Enrollments.Add(enrollment);
+        await _context.SaveChangesAsync();
         return Ok(enrollment);
     }
 }

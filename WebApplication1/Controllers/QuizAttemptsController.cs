@@ -1,24 +1,23 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+﻿using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Repository;
 using WebApplication1.Repository.Models;
 
 [ApiController]
-[Route("[controller]")]
-[Authorize(Roles = "Student")]
+[Route("api/[controller]")]
 public class QuizAttemptsController : ControllerBase
 {
-    [HttpPost]
-    public IActionResult Start(QuizAttempt attempt)
+    private readonly IDSDatabaseDbContext _context;
+
+    public QuizAttemptsController(IDSDatabaseDbContext context)
     {
-        using var context = new IDSDatabaseDbContext();
+        _context = context;
+    }
 
-        attempt.UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-        attempt.StartedAt = DateTime.UtcNow;
-
-        context.QuizAttempts.Add(attempt);
-        context.SaveChanges();
+    [HttpPost]
+    public async Task<IActionResult> Create(QuizAttempt attempt)
+    {
+        _context.QuizAttempts.Add(attempt);
+        await _context.SaveChangesAsync();
         return Ok(attempt);
     }
 }

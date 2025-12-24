@@ -1,27 +1,34 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Repository;
 using WebApplication1.Repository.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 [ApiController]
-[Route("[controller]")]
-[Authorize]
+[Route("api/[controller]")]
 public class QuizzesController : ControllerBase
 {
-    [Authorize(Roles = "Instructor,Admin")]
-    [HttpPost]
-    public IActionResult Create(Quiz quiz)
+    private readonly IDSDatabaseDbContext _context;
+
+    public QuizzesController(IDSDatabaseDbContext context)
     {
-        using var context = new IDSDatabaseDbContext();
-        context.Quizzes.Add(quiz);
-        context.SaveChanges();
-        return Ok(quiz);
+        _context = context;
     }
 
-    [HttpGet("{courseId}")]
-    public IActionResult GetByCourse(int courseId)
+    [HttpGet("course/{courseId}")]
+    public async Task<IActionResult> GetByCourse(int courseId)
+        => Ok(await _context.Quizzes.Where(q => q.CourseId == courseId).ToListAsync());
+
+    [HttpPost]
+    public async Task<IActionResult> Create(Quiz quiz)
     {
-        using var context = new IDSDatabaseDbContext();
-        return Ok(context.Quizzes.Where(q => q.CourseId == courseId).ToList());
+        _context.Quizzes.Add(quiz);
+        await _context.SaveChangesAsync();
+        return Ok(quiz);
     }
 }

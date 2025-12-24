@@ -1,95 +1,54 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using WebApplication1.Repository;
 using WebApplication1.Repository.Models;
 
-namespace WebApplication1.Controllers
+[ApiController]
+[Route("api/[controller]")]
+public class UsersController : ControllerBase
 {
-    [ApiController]
-    [Route("[controller]")]
-    public class UsersController : ControllerBase
+    private readonly IDSDatabaseDbContext _context;
+
+    public UsersController(IDSDatabaseDbContext context)
     {
-        
-        [HttpGet]
-        public IActionResult GetAll()
-        {
-            using var context = new IDSDatabaseDbContext();
-            return Ok(context.Users.ToList());
-        }
+        _context = context;
+    }
 
-        
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
-        {
-            using var context = new IDSDatabaseDbContext();
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+        => Ok(await _context.Users.ToListAsync());
 
-            var user = context.Users.Find(id);
-            if (user == null)
-                return NotFound();
+    [HttpGet("{id}")]
+    public async Task<IActionResult> Get(int id)
+    {
+        var user = await _context.Users.FindAsync(id);
+        return user == null ? NotFound() : Ok(user);
+    }
 
-            return Ok(user);
-        }
+    [HttpPost]
+    public async Task<IActionResult> Create(User user)
+    {
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+        return Ok(user);
+    }
 
-        
-        [HttpPost]
-        public IActionResult Insert([FromBody] User user)
-        {
-            using var context = new IDSDatabaseDbContext();
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, User user)
+    {
+        if (id != user.Id) return BadRequest();
+        _context.Entry(user).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
 
-           
-            if (user.Id != 0 && context.Users.Any(u => u.Id == user.Id))
-                return BadRequest("This ID already exists. Please choose a different one.");
-
-            
-            user.CreatedAt = DateTime.UtcNow;
-            user.UpdatedAt = DateTime.UtcNow;
-
-            context.Users.Add(user);
-            context.SaveChanges();
-
-       
-            return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
-        }
-
-
-
-        
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] User updatedUser)
-        {
-            using var context = new IDSDatabaseDbContext();
-
-            var user = context.Users.Find(id);
-            if (user == null)
-                return NotFound();
-
-            
-            user.FullName = updatedUser.FullName;
-            user.Email = updatedUser.Email;
-            user.HashedPassword = updatedUser.HashedPassword;
-            user.Role = updatedUser.Role;
-            user.Status = updatedUser.Status;
-            user.CreatedAt = updatedUser.CreatedAt;
-            user.UpdatedAt = updatedUser.UpdatedAt;
-
-            context.SaveChanges();
-
-            return Ok(user);
-        }
-
-        
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
-        {
-            using var context = new IDSDatabaseDbContext();
-
-            var user = context.Users.Find(id);
-            if (user == null)
-                return NotFound();
-
-            context.Users.Remove(user);
-            context.SaveChanges();
-
-            return Ok("User deleted successfully");
-        }
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null) return NotFound();
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 }

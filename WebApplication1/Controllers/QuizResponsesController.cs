@@ -4,16 +4,21 @@ using WebApplication1.Repository;
 using WebApplication1.Repository.Models;
 
 [ApiController]
-[Route("[controller]")]
-[Authorize(Roles = "Student")]
+[Route("api/[controller]")]
 public class QuizResponsesController : ControllerBase
 {
-    [HttpPost]
-    public IActionResult Submit(QuizResponse response)
+    private readonly IDSDatabaseDbContext _context;
+
+    public QuizResponsesController(IDSDatabaseDbContext context)
     {
-        using var context = new IDSDatabaseDbContext();
-        context.QuizResponses.Add(response);
-        context.SaveChanges();
+        _context = context;
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create(QuizResponse response)
+    {
+        _context.QuizResponses.Add(response);
+        await _context.SaveChangesAsync();
         return Ok(response);
     }
 }

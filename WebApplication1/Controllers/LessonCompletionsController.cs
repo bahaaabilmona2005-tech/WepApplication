@@ -1,24 +1,23 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+﻿using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Repository;
 using WebApplication1.Repository.Models;
 
 [ApiController]
-[Route("[controller]")]
-[Authorize(Roles = "Student")]
+[Route("api/[controller]")]
 public class LessonCompletionsController : ControllerBase
 {
-    [HttpPost]
-    public IActionResult Complete(LessonCompletion completion)
+    private readonly IDSDatabaseDbContext _context;
+
+    public LessonCompletionsController(IDSDatabaseDbContext context)
     {
-        using var context = new IDSDatabaseDbContext();
+        _context = context;
+    }
 
-        completion.UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-        completion.CompletedAt = DateTime.UtcNow;
-
-        context.LessonCompletions.Add(completion);
-        context.SaveChanges();
+    [HttpPost]
+    public async Task<IActionResult> Complete(LessonCompletion completion)
+    {
+        _context.LessonCompletions.Add(completion);
+        await _context.SaveChangesAsync();
         return Ok(completion);
     }
 }

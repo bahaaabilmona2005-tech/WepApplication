@@ -1,20 +1,23 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+﻿using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Repository;
 using WebApplication1.Repository.Models;
 
 [ApiController]
-[Route("[controller]")]
-[Authorize(Roles = "Student")]
+[Route("api/[controller]")]
 public class CertificatesController : ControllerBase
 {
-    [HttpGet]
-    public IActionResult MyCertificates()
-    {
-        using var context = new IDSDatabaseDbContext();
+    private readonly IDSDatabaseDbContext _context;
 
-        int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-        return Ok(context.Certificates.Where(c => c.UserId == userId).ToList());
+    public CertificatesController(IDSDatabaseDbContext context)
+    {
+        _context = context;
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create(Certificate certificate)
+    {
+        _context.Certificates.Add(certificate);
+        await _context.SaveChangesAsync();
+        return Ok(certificate);
     }
 }

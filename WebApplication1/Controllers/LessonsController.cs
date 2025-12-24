@@ -1,31 +1,34 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Repository;
 using WebApplication1.Repository.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 [ApiController]
-[Route("[controller]")]
-[Authorize]
+[Route("api/[controller]")]
 public class LessonsController : ControllerBase
 {
-    [HttpGet("course/{courseId}")]
-    public IActionResult GetLessons(int courseId)
+    private readonly IDSDatabaseDbContext _context;
+
+    public LessonsController(IDSDatabaseDbContext context)
     {
-        using var context = new IDSDatabaseDbContext();
-        return Ok(context.Lessons
-            .Where(l => l.CourseId == courseId)
-            .OrderBy(l => l.OrderIndex)
-            .ToList());
+        _context = context;
     }
 
-    [Authorize(Roles = "Instructor,Admin")]
+    [HttpGet("course/{courseId}")]
+    public async Task<IActionResult> GetByCourse(int courseId)
+        => Ok(await _context.Lessons.Where(l => l.CourseId == courseId).ToListAsync());
+
     [HttpPost]
-    public IActionResult Create(Lesson lesson)
+    public async Task<IActionResult> Create(Lesson lesson)
     {
-        using var context = new IDSDatabaseDbContext();
-        lesson.CreatedAt = DateTime.UtcNow;
-        context.Lessons.Add(lesson);
-        context.SaveChanges();
+        _context.Lessons.Add(lesson);
+        await _context.SaveChangesAsync();
         return Ok(lesson);
     }
 }
