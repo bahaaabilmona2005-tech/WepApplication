@@ -1,7 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Data;
+using System.Net.NetworkInformation;
+using WebApplication1.DTOs.User;
 using WebApplication1.Repository;
 using WebApplication1.Repository.Models;
+using BCrypt.Net;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -26,9 +32,22 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(User user)
+    public async Task<IActionResult> Create(UserCreateDto dto)
     {
-        _context.Users.Add(user);
+        if(!ModelState.IsValid)
+            return BadRequest(ModelState);
+        if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
+            return BadRequest ("email already exists");
+        var user = new User
+        {
+            FullName = dto.FullName,
+            Email = dto.Email,
+            HashedPassword = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            Role = dto.Role,
+            Status = dto.Status,
+            CreatedAt = DateTime.UtcNow
+        };
+         _context.Users.Add(user);
         await _context.SaveChangesAsync();
         return Ok(user);
     }
