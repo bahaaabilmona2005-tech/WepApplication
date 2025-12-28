@@ -1,28 +1,25 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using WebApplication1.Repository;
-using WebApplication1.Repository.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
+using System.Collections.Generic;
+using System.Data;
+using System.Net.NetworkInformation;
+using WebApplication1.DTOs.User;
+using WebApplication1.Repository;
+using WebApplication1.Repository.Models;
+using BCrypt.Net;
+using Microsoft.AspNetCore.Authorization;
+[Authorize(Roles = "Admin,Instructor")]
 [ApiController]
 [Route("api/[controller]")]
 public class QuestionsController : ControllerBase
 {
     private readonly IDSDatabaseDbContext _context;
+    public QuestionsController(IDSDatabaseDbContext context) => _context = context;
 
-    public QuestionsController(IDSDatabaseDbContext context)
-    {
-        _context = context;
-    }
-
-    [HttpGet("quiz/{quizId}")]
-    public async Task<IActionResult> GetByQuiz(int quizId)
-        => Ok(await _context.Questions.Where(q => q.QuizId == quizId).ToListAsync());
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+        => Ok(await _context.Questions.ToListAsync());
 
     [HttpPost]
     public async Task<IActionResult> Create(Question question)

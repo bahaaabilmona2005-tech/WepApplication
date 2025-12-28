@@ -1,28 +1,27 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using WebApplication1.Repository;
-using WebApplication1.Repository.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Data;
+using System.Net.NetworkInformation;
+using WebApplication1.DTOs.User;
+using WebApplication1.Repository;
+using WebApplication1.Repository.Models;
+using BCrypt.Net;
+using Microsoft.AspNetCore.Authorization;
 
+
+[Authorize(Roles = "Admin,Instructor")]
 [ApiController]
 [Route("api/[controller]")]
 public class AnswersController : ControllerBase
 {
     private readonly IDSDatabaseDbContext _context;
+    public AnswersController(IDSDatabaseDbContext context) => _context = context;
 
-    public AnswersController(IDSDatabaseDbContext context)
-    {
-        _context = context;
-    }
-
-    [HttpGet("question/{questionId}")]
-    public async Task<IActionResult> GetByQuestion(int questionId)
-        => Ok(await _context.Answers.Where(a => a.QuestionId == questionId).ToListAsync());
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+        => Ok(await _context.Answers.ToListAsync());
 
     [HttpPost]
     public async Task<IActionResult> Create(Answer answer)
